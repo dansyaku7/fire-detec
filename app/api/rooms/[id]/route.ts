@@ -4,12 +4,13 @@ import prisma from "@/lib/prisma";
 // --- FUNGSI UNTUK MENGEDIT RUANGAN (UPDATE) ---
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } } // Tetap gunakan tipe standar
+  // FIXED: Mengubah tipe 'context' untuk menerima Promise sesuai log error Vercel
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // NOTE: Jika error 'Promise' masih muncul, coba hapus folder .next dan node_modules,
-    // lalu jalankan 'pnpm install' lagi. Terkadang cache bisa menyebabkan error aneh.
-    const { id } = context.params; 
+    // FIXED: Menambahkan 'await' untuk menunggu Promise-nya selesai
+    const params = await context.params;
+    const { id } = params;
     const { name, floor } = await request.json();
 
     if (!name || !floor) {
@@ -37,10 +38,13 @@ export async function PUT(
 // --- FUNGSI UNTUK MENGHAPUS RUANGAN ---
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } } // Tetap gunakan tipe standar
+  // FIXED: Mengubah tipe 'context' untuk menerima Promise sesuai log error Vercel
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: roomId } = context.params;
+    // FIXED: Menambahkan 'await' untuk menunggu Promise-nya selesai
+    const params = await context.params;
+    const { id: roomId } = params;
 
     if (!roomId) {
       return NextResponse.json({ message: "Room ID is required" }, { status: 400 });
