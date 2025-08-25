@@ -51,8 +51,13 @@ const AddRoomModal: React.FC<AddRoomModalProps> = ({
       setFloor("");
       onRoomAdded();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) { // FIXED: Mengganti 'any' dengan 'unknown'
+      // Melakukan pengecekan tipe sebelum mengakses properti .message
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +70,8 @@ const AddRoomModal: React.FC<AddRoomModalProps> = ({
           <DialogHeader>
             <DialogTitle>Add New Room</DialogTitle>
             <DialogDescription>
-              Enter the details for the new room here. Click save when you're
+              {/* FIXED: Mengganti tanda kutip ' dengan &apos; */}
+              Enter the details for the new room here. Click save when you&apos;re
               done.
             </DialogDescription>
           </DialogHeader>
