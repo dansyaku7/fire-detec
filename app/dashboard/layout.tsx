@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import Sidebar from "./components/Sidebar";
+import DashboardClientLayout from "./components/DashboardClientLayout";
 
 export default async function DashboardLayout({
   children,
@@ -15,11 +15,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {children}
-      </div>
-    </div>
+    // Kita bungkus semuanya dengan komponen client baru
+    // yang akan menangani state dan interaksi.
+    <DashboardClientLayout>{children}</DashboardClientLayout>
   );
 }
