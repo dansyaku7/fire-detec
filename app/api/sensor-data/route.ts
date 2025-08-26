@@ -8,7 +8,10 @@ export async function POST(request: NextRequest) {
     const { macAddress, value, sensorType } = body;
 
     if (!macAddress || value === undefined || !sensorType) {
-      return NextResponse.json({ message: "macAddress, value, and sensorType are required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "macAddress, value, and sensorType are required" },
+        { status: 400 }
+      );
     }
 
     const sensor = await prisma.sensor.findUnique({
@@ -16,10 +19,25 @@ export async function POST(request: NextRequest) {
       include: { room: true }, // Sertakan info ruangan
     });
 
+    // --- PERUBAHAN UTAMA DI SINI ---
+    // Jika sensor TIDAK DITEMUKAN di tabel utama, daftarkan sebagai device baru.
     if (!sensor) {
-      return NextResponse.json({ message: "Device not registered" }, { status: 404 });
+      // Daftarkan sebagai device baru yang menunggu untuk di-assign
+      await prisma.unassignedDevice.upsert({
+        where: { macAddress },
+        update: {},
+        create: { macAddress },
+      });
+
+      // Kirim balasan 404. Gateway tidak perlu melakukan apa-apa lagi.
+      return NextResponse.json(
+        { message: "Device not assigned, but acknowledged" },
+        { status: 404 }
+      );
     }
 
+    // --- LOGIKA LAMA MILIKMU (TETAP DIPERTAHANKAN) ---
+    // Jika sensor DITEMUKAN, proses datanya seperti biasa.
     const newSensorData = await prisma.sensorData.create({
       data: {
         value: parseFloat(value),
@@ -34,11 +52,15 @@ export async function POST(request: NextRequest) {
     if (sensorType === "HEAT" && parseFloat(value) > 60) {
       newStatus = "High";
       isAlarm = true;
-      alarmMessage = `High temperature detected (${parseFloat(value).toFixed(1)}°C)`;
+      alarmMessage = `High temperature detected (${parseFloat(value).toFixed(
+        1
+      )}°C)`;
     } else if (sensorType === "SMOKE" && parseFloat(value) > 300) {
       newStatus = "High";
       isAlarm = true;
-      alarmMessage = `High smoke level detected (${Math.round(parseFloat(value))} PPM)`;
+      alarmMessage = `High smoke level detected (${Math.round(
+        parseFloat(value)
+      )} PPM)`;
     } else if (sensorType === "BREAKING_GLASS" && parseFloat(value) === 1) {
       newStatus = "Triggered";
       isAlarm = true;
@@ -63,11 +85,14 @@ export async function POST(request: NextRequest) {
         },
       });
     }
-    
-    return NextResponse.json(newSensorData, { status: 200 });
 
+    return NextResponse.json(newSensorData, { status: 200 });
+    
   } catch (error) {
     console.error("Error receiving sensor data:", error);
-    return NextResponse.json({ message: "Failed to process sensor data" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Failed to process sensor data" },
+      { status: 500 }
+    );
   }
 }
